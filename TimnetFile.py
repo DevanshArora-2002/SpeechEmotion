@@ -37,7 +37,10 @@ from keras.layers import BatchNormalization
 from keras.activations import sigmoid
 
 class Temporal_Aware_Block(tf.keras.layers.Layer):
-
+  """
+  Individual Temporal aware block consisting of a 1D convolution and
+  attention model and returns the block
+  """
   def __init__(self,s, i, activation, nb_filters, kernel_size, dropout_rate=0):
     super().__init__()
     self.conv1=Conv1D(filters=nb_filters, kernel_size=kernel_size,
@@ -51,6 +54,7 @@ class Temporal_Aware_Block(tf.keras.layers.Layer):
     self.d1=SpatialDropout1D(dropout_rate)
     self.d2=SpatialDropout1D(dropout_rate)
     self.nb_filters=nb_filters
+  
   def compute_output_shape(self,input_shape):
     return (1,self.nb_filters)
   def call(self,x):
@@ -94,6 +98,10 @@ class WeightLayer(tf.keras.layers.Layer):
         return (input_shape[0],input_shape[2])
 
 class TIMNET(tf.keras.layers.Layer):
+    """
+    Main TIMNET model consisting of multiple Temporal Aware Blocks
+    based on filters, kernels stacks and dialations
+    """
     def __init__(self,num_labels,
                  nb_filters=64,
                  kernel_size=2,
@@ -136,22 +144,6 @@ class TIMNET(tf.keras.layers.Layer):
                                                     self.dropout_rate))
 
       self.weight_layer=WeightLayer()
-      print(len(self.list_for))
-      print(len(self.list_for[0]))
-    # def build(self,input_shape):
-    #   input_shape=self.conv1.compute_output_shape(input_shape)
-    #   input_shape=self.list_for[0][0].compute_output_shape(input_shape)
-    #   axis=input_shape[-2]
-    #   inp=list(input_shape)
-    #   inp.append(self.nb_stacks*self.dialations)
-    #   input_shape=tuple(inp)
-    #   self.keys=self.add_weight(
-    #         name="Keys",
-    #         shape=(input_shape[-2],input_shape[-1]),
-    #         initializer=tf.random_normal_initializer(),
-    #         trainable=True)
-
-    #   super(TIMNET, self).build(input_shape)
 
     def call(self, inputs, mask=None):
         forward = inputs
@@ -181,14 +173,6 @@ class TIMNET(tf.keras.layers.Layer):
               continue
           output_2 = K.concatenate([output_2,item],axis=-2)
         x = output_2
-        # keys=tf.expand_dims(self.keys,axis=0)
-        # output_2=tf.multiply(keys,output_2)
-        # output_2=tf.nn.softmax(output_2,axis=-1)
-        # output_2=tf.math.reduce_sum(output_2,axis=-2,keepdims=True)
-        # x=tf.multiply(output_2,x)
-        # x=tf.math.reduce_sum(x,axis=-1)
-        # x=self.d1(x)
-        # x=self.d2(x)
         x=self.weight_layer(x)
         x=self.d1(x)
         x=self.d2(x)
@@ -201,7 +185,7 @@ def evaluate(pred,labels):
   l1=np.array(labels)
   p1=np.argmax(p1,axis=1)
   return accuracy_score(p1,l1),precision_score(p1,l1,average='weighted'),recall_score(p1,l1,average='weighted')
-def train(train_dataset,val_dataset,epochs,loss_fn,optim,model):
+def train_model(train_dataset,val_dataset,epochs,loss_fn,optim,model):
   train_loss=[]
   train_acc=[]
   train_prec=[]
@@ -260,6 +244,8 @@ def train(train_dataset,val_dataset,epochs,loss_fn,optim,model):
           'rec':[train_rec,val_rec]}
 
 def train_test_split(input_x,target_y,split=0.5):
+    # Selective train-test-split based on split size 
+    #returns training,test
     no_samples=input_x.shape[0]
     no_train_samples=int(no_samples*0.5)
 
@@ -339,7 +325,7 @@ def train(mode,file_path,output_dir,model_path=None,epochs=2):
         print(model.summary())
         loss_fn = tf.losses.SparseCategoricalCrossentropy
         optimizer = tf.optimizers.Adam(learning_rate=0.001)
-        losses = train(train_dataset, val_dataset, epochs, loss_fn, optimizer, model)
+        losses = train_model(train_dataset, val_dataset, epochs, loss_fn, optimizer, model)
         save_plots(losses,output_dir)
 
         loss, pred_labels = predict(test_x, test_y, loss_fn, model)
