@@ -11,5 +11,5 @@ Our model's architecture is based on the Transformer, originally introduced in t
 The model takes in raw audio data, which is then converted into spectrograms to represent the features in a more structured form. These are then passed through several Transformer encoder layers, which produce an output sequence that represents the emotion content in the input audio. The output sequence is then passed through a fully connected layer to produce the final emotion classification.
 # Python files
 command line code
-python3 filename.py --mode (train/test) --epochs --output_dir_name --dataset_path --model (Optional for model weights)
+python3 test_file.py --mode (train/test) --epochs --output_dir_name --dataset_path --model (Optional for model weights)
 
