@@ -128,6 +128,7 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 global preds_val
 def compute_metrics(p: EvalPrediction):
+    # Function that computes metrics in the form of accuracy, precision and recall
     preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
     preds = np.squeeze(preds)
     preds=np.argmax(preds,axis=1)
@@ -146,12 +147,15 @@ def get_audio(path):
   data,sr=librosa.load(path,sr=sr)
   return data
 def preprocess(examples):
+    #Callback function for dataset sampling
   lis=[get_audio(ex) for ex in examples['Path']]
   result=feature_extractor(lis,sampling_rate=target_sampling_rate,chunk_length=15)
   return result
 global feature_extractor
 global target_sampling_rate
 def train(mode,file_path,output_dir,model_path=None,epochs=2):
+    #Main method used for training the file 
+    #Returns the metrics for testing dataset and saves the plots in the directory mentioned in the output dir
     if(mode=='train'):
         dataset = pd.read_csv(file_path)
         num_labels = len(pd.unique(dataset['labels']))
