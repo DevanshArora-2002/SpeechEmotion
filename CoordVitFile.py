@@ -10,6 +10,10 @@ from sklearn.model_selection import train_test_split
 import timm
 import torch
 class datasets(Dataset):
+  """
+  Dataset for main module 
+  returns spectrogram image along with label associated with it
+  """
   def __init__(self,paths,ids):
     self.paths=paths
     self.id=ids
@@ -19,6 +23,9 @@ class datasets(Dataset):
     audio,sr=librosa.load(self.paths.iloc[idx],sr=22050)
     return torch.tensor(create_spectrogram(audio,sr)),torch.tensor(self.id.iloc[idx])
 class model(nn.Module):
+  """
+  Loads the model and adds a classification head on the model
+  """
   def __init__(self,config,ckpt):
     super().__init__()
     self.config=config
@@ -72,18 +79,13 @@ def create_spectrogram(data, sr):
     # Retrieve the corresponding frequency axis
     freqs = librosa.fft_frequencies(sr=sr, n_fft=1024)
 
-    # Plot the spectrogram
-    # plt.figure(figsize=(12, 3))
-    # plt.title('Spectrogram for audio with {} emotion'.format(e), size=15)
-    # librosa.display.specshow(Xdb, sr=sr, x_axis='time', y_axis='linear', hop_length=128)
-    # plt.colorbar(format="%+2.0f dB")
-    # plt.xlabel('Time (s)')
-    # plt.ylabel('Frequency (Hz)')
+    
     spec=Xdb
     min=np.min(spec)
     max=np.max(spec)
     spec=spec-min
     spec=spec/(max-min)
+    # Noramalising the co-ordinates
     spec=spec*255
     spec=np.ceil(spec)
     spec2=cv2.resize(spec,(224,224))
@@ -91,6 +93,7 @@ def create_spectrogram(data, sr):
 
 from sklearn.metrics import accuracy_score,precision_score,recall_score
 def evaluate(predictions,ground_truth):
+  # Evaluation function for accuracy, precision and recall
   predictions=np.array(predictions.detach().to('cpu'))
   ground_truth=np.array(ground_truth.detach().to('cpu'))
   predictions=np.argmax(predictions,axis=1)
@@ -106,6 +109,7 @@ def evaluate(predictions,ground_truth):
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 def train_model(model,loader,val_loader,optim,epoch):
+  # Main training function 
   loss_curve=[]
   acc_curve=[]
   rec_curve=[]
@@ -166,6 +170,7 @@ def train_model(model,loader,val_loader,optim,epoch):
           'Recall':[rec_curve,val_rec_curve]}
 
 def eval(model,test_loader):
+  # Evaluation function for the file
   with torch.no_grad():
       predictions=None
       ground_truth=None
@@ -204,6 +209,7 @@ def save_plots(plots,directory):
 
 
 def train(mode,file_path,output_dir,model_path=None,epochs=5):
+  
     if(mode=='train'):
         dataset = pd.read_csv(file_path)
         num_labels = len(pd.unique(dataset['labels']))
